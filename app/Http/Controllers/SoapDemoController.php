@@ -358,4 +358,144 @@ class SoapDemoController extends Controller
             ]);
         }
     }
+
+    /**
+     * Buscar país por nombre
+     *
+     * Endpoint AJAX que busca el código ISO de un país por su nombre
+     *
+     * @param Request $request Petición HTTP con el parámetro 'country_name'
+     *
+     * @return JsonResponse Respuesta JSON con el código ISO o error
+     *
+     * @example
+     * POST /soap/search-country-iso-code
+     * {
+     *     "country_name": "Chile"
+     * }
+     *
+     * Response (éxito):
+     * {
+     *     "success": true,
+     *     "country_name": "Chile",
+     *     "country_code": "CL"
+     * }
+     */
+    public function getCountryISOCode(Request $request) : JsonResponse
+    {
+        try
+        {
+            //Validar la entrada del usuario
+            $request->validate([
+                'country_name' => 'required|string|min:3|max:100'
+            ]);
+
+            //Crear servicio SOAP
+            $service = new CountryInfoService();
+
+            //Busca código ISO del país
+            $countryCode = $service->getCountryISOCode($request->country_name);
+
+            if(empty($countryCode) || $countryCode === '')
+            {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Pais no encontrado'
+                ]);
+            }
+
+            //Retornar respuesta exitosa
+            return response()->json([
+                'success' => true,
+                'country_name' => $request->country_name,
+                'country_code' => $countryCode
+            ]);
+        }
+        catch(SoapFault $sf)
+        {
+            //Error SOAP
+            return response()->json([
+                'success' => false,
+                'error' => 'Error de SOAP: '.$sf->getMessage()
+            ], 500);
+        }
+        catch(Exception $ex)
+        {
+            //Otro error
+            return response()->json([
+                'success' => false,
+                'error' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener lista de todos los países
+     *
+     * Endpoint AJAX que obtiene la lista completa de todos los países
+     * ordenados por código ISO
+     *
+     * @return JsonResponse Respuesta JSON con la lista de países o error
+     *
+     * @example
+     * POST /soap/list-all-countries
+     *
+     * Response (éxito):
+     * {
+     *     "success": true,
+     *     "total": 250,
+     *     "countries": [
+     *         {"code": "AD", "name": "Andorra"},
+     *         {"code": "AE", "name": "United Arab Emirates"},
+     *         ...
+     *     ]
+     * }
+     */
+
+    public function listCountryNameByCode() : JsonResponse
+    {
+        try
+        {
+            //Crear servicio SOAP
+            $service = new CountryInfoService();
+
+            //Obtener Lista de Paises
+            $countries = $service->listCountryNamesByCode();
+
+            //Procesar paises para JSON
+            $processedCountries = [];
+
+            foreach($countries as $country)
+            {
+                $processedCountries[] = [
+                    'code' => $country->sISOCode ?? 'N/A',
+                    'name' => $country->sName ?? 'N/A'
+                ];
+            }
+
+            //Retornar repuesta exitosa
+            return response()->json([
+                'success' => true,
+                'total' => count($processedCountries),
+                'countries' => $processedCountries
+            ]);
+        }
+        catch(SoapFault $sf)
+        {
+            //Error SOAP
+            return response()->json([
+                'success' => false,
+                'error' => 'Error de SOAP: '.$sf->getMessage()
+            ], 500);
+        }
+        catch(Exception $ex)
+        {
+            //Otro error
+            return response()->json([
+                'success' => false,
+                'error' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }
+
