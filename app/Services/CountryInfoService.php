@@ -93,32 +93,18 @@ class CountryInfoService extends SoapService
     }
 
     /**
-     * Obtener información de moneda del país
-     *
-     * Obtiene el código ISO y nombre de la moneda para un país
+     * Obtener la moneda del país
      *
      * @param string $countryCode Código ISO del país (ej: CL, US, ES)
-     *
-     * @return object Objeto con propiedades:
-     *                - sISOCode: Código ISO de la moneda (ej: CLP, USD, EUR)
-     *                - sName: Nombre de la moneda (ej: Chilean Peso, US Dollar)
-     *
-     * @throws \SoapFault Si hay error en la consulta SOAP
-     *
-     * @example
-     * $service = new CountryInfoService();
-     * $currency = $service->getCountryCurrency('CL');
-     * echo $currency->sISOCode;  // Output: CLP
-     * echo $currency->sName;     // Output: Chilean Peso
+     * @return object Objeto con sISOCode (ej: CLP) y sName (ej: Chilean Peso)
      */
-    public function getCountryCurrency($countryCode) : string
+    public function getCountryCurrency($countryCode): object
     {
-        // Llamar a la operación SOAP 'CountryCurrency'
         $response = $this->call('CountryCurrency', [
             'sCountryISOCode' => strtoupper((string) $countryCode)
         ]);
 
-        return (string) $response->CountryCurrencyResult;
+        return $response->CountryCurrencyResult;
     }
 
     /**
@@ -245,6 +231,24 @@ class CountryInfoService extends SoapService
         }
 
         return [];
+    }
+
+    /**
+     * Obtener la URL de la bandera del país
+     *
+     * @param string $countryCode Código ISO del país (ej: CL, US, ES)
+     *
+     * @return string URL de la imagen de la bandera
+     *
+     * @throws \SoapFault Si hay error en la consulta SOAP
+     */
+    public function getCountryFlag($countryCode): string
+    {
+        $response = $this->call('CountryFlag', [
+            'sCountryISOCode' => strtoupper((string) $countryCode)
+        ]);
+
+        return (string) $response->CountryFlagResult;
     }
 }
 

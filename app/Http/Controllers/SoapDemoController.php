@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use SoapFault;
 
+use function Laravel\Prompts\error;
+
 /**
  * Controlador para demostración de Web Services SOAP
  *
@@ -331,16 +333,16 @@ class SoapDemoController extends Controller
 
             // Retornar respuesta exitosa
             return response()->json([
-                'success' => true,
+                'success'      => true,
                 'country_code' => $countryCode,
-                'data' => [
-                    'name' => $info->sName ?? 'N/A',
-                    'capital' => $info->sCapitalCity ?? 'N/A',
-                    'continent' => $info->sContinent ?? 'N/A',
-                    'currency_code' => $info->sCurrencyISOCode ?? 'N/A',
-                    'flag_url' => $info->sCountryFlag ?? 'N/A',
-                    'language_code' => $info->sLanguageISOCode ?? 'N/A',
-                ]
+                'data'         => [
+                    'name'           => $info->sName ?? 'N/A',
+                    'capital'        => $info->sCapitalCity ?? 'N/A',
+                    'phone_code'     => $info->sPhoneCode ?? 'N/A',
+                    'currency_code'  => $info->sCurrencyISOCode ?? 'N/A',
+                    'continent_code' => $info->sContinentCode ?? 'N/A',
+                    'flag_url'       => $info->sCountryFlag ?? 'N/A',
+                ],
             ]);
         }catch(SoapFault $sf)
         {
@@ -495,6 +497,61 @@ class SoapDemoController extends Controller
                 'success' => false,
                 'error' => $ex->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Obtener la URL de la bandera del país
+     *
+     * @param Request $request Petición HTTP con el parámetro 'country_code'
+     *
+     * @return JsonResponse Respuesta JSON con la URL de la bandera o error
+     *
+     * @example
+     * POST /soap/get-country-flag
+     * {
+     *     "country_code": "VE"
+     * }
+     *
+     * Response (éxito):
+     * {
+     *     "success": true,
+     *     "country_code": "VE",
+     *     "flag_url": "http://www.oorsprong.org/WebSamples.CountryInfo/Flags/Venezuela.jpg"
+     * }
+     */
+    public function getCountryFlag(Request $request): JsonResponse
+    {
+        try
+        {
+            $request->validate([
+                'country_code' => 'required|string|size:2'
+            ]);
+
+            $countryCode = strtoupper($request->country_code);
+
+            $service = new CountryInfoService();
+            $flagUrl = $service->getCountryFlag($countryCode);
+
+            return response()->json([
+                'success' => true,
+                'country_code' => $countryCode,
+                'flag_url' => $flagUrl
+            ]);
+
+        }
+        catch(SoapFault $sf)
+        {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error de SOAP: '.$sf->getMessage()
+            ]);
+        }catch(Exception $ex)
+        {
+            return response()->json([
+                'success' => false,
+                'error' => $ex->getMessage()
+            ]);
         }
     }
 }
