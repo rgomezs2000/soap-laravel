@@ -3,6 +3,7 @@ namespace App\Services;
 
 use SoapClient;
 use SoapFault;
+use Throwable;
 
 /**
  * Clase base para consumir Web Services SOAP
@@ -74,14 +75,21 @@ class SoapService{
      */
     protected function connect()
     {
+        // Silenciar solo los warnings del SoapClient durante la conexión
+        set_error_handler(fn () => true);
+
         try {
             $this->client = new SoapClient($this->wsdlUrl, $this->options);
 
-        } catch (SoapFault $e) {
+        } catch (SoapFault $sf) {
             throw new SoapFault(
-                'connection_error',
-                'No se pudo conectar al servicio SOAP: ' . $e->getMessage()
+                'WSDL',
+                'No se pudo conectar al servicio SOAP: ' . $sf->getMessage()
             );
+        }
+        finally
+        {
+            restore_error_handler();
         }
     }
 
@@ -184,6 +192,44 @@ class SoapService{
     public function getLastResponse()
     {
         return $this->client->__getLastResponse();
+    }
+
+    /**
+     * Convierte cualquier excepción en un arreglo uniforme para responder en JSON
+     *
+     * @param \Throwable $e Excepción capturada
+     *
+     * @return array{tipo: string, mensaje: string, status: int}
+     */
+    public static function formatError(Throwable $t) : array
+    {
+        // No se pudo cargar el WSDL (URL incorrecta o servidor caído)
+        if($t instanceof SoapFault && $t->faultcode === 'WSDL')
+        {
+            return [
+                'tipo' => 'conexion',
+                'mensaje' => 'No se puede conectar al servidor SOAP',
+                'status' => 503
+            ];
+        }
+
+        // El servidor SOAP respondió con un Fault
+        if($t instanceof SoapFault)
+        {
+            return [
+                'tipo' => 'soap',
+                'mensaje' => $t->getMessage(),
+                'status' => 502
+            ];
+        }
+
+        // Cualquier otro error
+        return [
+            'tipo' => 'interno',
+            'mensaje' => $t->getMessage(),
+            'status' => 500
+        ];
+
     }
 }
 ?>

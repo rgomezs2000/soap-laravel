@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Services\CountryInfoService;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Laravel\Prompts\error;
+use App\Services\SoapService;
+use Illuminate\Validation\ValidationException;
+use Exception;
 use SoapFault;
-
-use function Laravel\Prompts\error;
+use Throwable;
 
 /**
  * Controlador para demostración de Web Services SOAP
@@ -82,20 +84,15 @@ class SoapDemoController extends Controller
                 'country_code' => $countryCode,
                 'country_name' => $name
             ]);
-        }catch(SoapFault $sf)
+        }
+        catch(ValidationException $ve)
         {
-            // Error de SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ], 400);
-        }catch(Exception $ex)
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
+        }
+        catch(Throwable $t)
         {
-            // Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ], 500);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -143,20 +140,15 @@ class SoapDemoController extends Controller
                 'country_code' => $countryCode,
                 'capital_city' => $capital
             ]);
-        }catch(SoapFault $sf)
+        }
+        catch(ValidationException $ve)
         {
-            // Error de SOAP
-            return response()->json([
-                'success' => false,
-                'error ' => 'Error de SOAP: '.$sf->getMessage()
-            ], 400);
-        }catch(Exception $ex)
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
+        }
+        catch(Throwable $t)
         {
-            // Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ]);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -206,20 +198,15 @@ class SoapDemoController extends Controller
                 'currency' => $currency
             ]);
 
-        }catch(SoapFault $sf)
+        }
+        catch(ValidationException $ve)
         {
-            // Error de SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ]);
-        }catch(Exception $ex)
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
+        }
+        catch(Throwable $t)
         {
-            // Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ]);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -268,20 +255,15 @@ class SoapDemoController extends Controller
                 'country_code'  => $countryCode,
                 'phone_code'    => $phoneCode
             ]);
-        }catch(SoapFault $sf)
+        }
+        catch(ValidationException $ve)
         {
-            // Error de SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ]);
-        }catch(Exception $ex)
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
+        }
+        catch(Throwable $t)
         {
-            // Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ]);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -328,6 +310,16 @@ class SoapDemoController extends Controller
             // Crear servicio SOAP
             $service = new CountryInfoService();
 
+            // El servicio no lanza error para códigos inexistentes, hay que validarlo
+            if(!$service->countryExist($countryCode))
+            {
+                return response()->json([
+                    'success' => false,
+                    'tipo' => 'no_encontrado',
+                    'error' => 'No existe un país con el código '.$countryCode,
+                ], 404);
+            }
+
             // Obtener información completa del país
             $info = $service->getFullCountryInfo($countryCode);
 
@@ -344,20 +336,15 @@ class SoapDemoController extends Controller
                     'flag_url'       => $info->sCountryFlag ?? 'N/A',
                 ],
             ]);
-        }catch(SoapFault $sf)
+        }
+        catch(ValidationException $ve)
         {
-            // Error de SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ]);
-        }catch(Exception $ex)
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
+        }
+        catch(Throwable $t)
         {
-            // Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ]);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -413,21 +400,14 @@ class SoapDemoController extends Controller
                 'country_code' => $countryCode
             ]);
         }
-        catch(SoapFault $sf)
+        catch(ValidationException $ve)
         {
-            //Error SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ], 500);
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
         }
-        catch(Exception $ex)
+        catch(Throwable $t)
         {
-            //Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ], 500);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -482,21 +462,14 @@ class SoapDemoController extends Controller
                 'countries' => $processedCountries
             ]);
         }
-        catch(SoapFault $sf)
+        catch(ValidationException $ve)
         {
-            //Error SOAP
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ], 500);
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
         }
-        catch(Exception $ex)
+        catch(Throwable $t)
         {
-            //Otro error
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ], 500);
+            return $this->soapErrorResponse($t);
         }
     }
 
@@ -540,19 +513,26 @@ class SoapDemoController extends Controller
             ]);
 
         }
-        catch(SoapFault $sf)
+        catch(ValidationException $ve)
         {
-            return response()->json([
-                'success' => false,
-                'error' => 'Error de SOAP: '.$sf->getMessage()
-            ]);
-        }catch(Exception $ex)
-        {
-            return response()->json([
-                'success' => false,
-                'error' => $ex->getMessage()
-            ]);
+            // Dejar que Laravel responda con 422 y los mensajes de validación
+            throw $ve;
         }
+        catch(Throwable $t)
+        {
+            return $this->soapErrorResponse($t);
+        }
+    }
+
+    private function soapErrorResponse(Throwable $t) : JsonResponse
+    {
+        $error = SoapService::formatError($t);
+
+        return response()->json([
+            'suceess' => false,
+            'tipo' => $error['tipo'],
+            'error' => $error['mensaje'],
+        ], $error['status']);
     }
 }
 

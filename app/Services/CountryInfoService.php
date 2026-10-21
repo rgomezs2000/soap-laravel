@@ -20,6 +20,8 @@ class CountryInfoService extends SoapService
      * @var string
      */
     private const WSDL_URL = "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL";
+    //private const WSDL_URL = "http://webservices.oorsprong.org/noexiste.wsdl";
+    private const NOT_FOUND_MESSAGE = 'Country not found in the database';
 
     /**
      * Constructor
@@ -249,6 +251,18 @@ class CountryInfoService extends SoapService
         ]);
 
         return (string) $response->CountryFlagResult;
+    }
+
+    /**
+     * Indica si el código ISO corresponde a un país existente
+     *
+     * @param string $countryCode Código ISO (ej: CL, US, ES)
+     *
+     * @return bool
+     */
+    public function countryExist($countryCode) : bool
+    {
+        return $this->getCountryName($countryCode) !== self::NOT_FOUND_MESSAGE;
     }
 }
 
